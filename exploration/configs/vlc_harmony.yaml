@@ -1,0 +1,125 @@
+
+default:
+
+  debug_mode: False
+
+  app:
+    name: "VLC"
+    description: "VLC is a free and open-source media player that plays most multimedia files, streams, and discs. It supports local and network playback for video and audio across a wide range of formats."
+
+  driver:
+    device_id: "YOUR_DEVICE_ID"
+    os_name: "harmony"
+    appPackage: "org.videolan.vlc"
+    appActivity: "org.videolan.vlc.StartActivity"
+    skip_exploration_for_no_app_package: true # If true, skip exploration when not in the VLC app package (e.g., after navigating away).
+    reset_instruction: "Go to Video tab. (if Video tab is highlighted (active) you don't need to to anything just return Finish)"
+
+  vlm:
+    alibaba_api_key: 'YOUR_ALIBABA_API_KEY'
+    yibu_api_key: 'YOUR_YIBU_API_KEY'
+    use_yibu_api: true
+    model_name_for_page_summary: 'qwen3.5-flash'
+    screenshot_longest_side_for_element_extraction_model: 1536
+    model_name_for_elements_extraction: 'qwen3.6-plus'
+    screenshot_longest_side_for_page_summary_model: 1344
+    jpeg_quality_for_element_extraction_model: 90
+    jpeg_quality_for_page_summary_model: 90
+
+  screenshots:
+    margin_from_top_screen_to_ignore: 100
+    jpeg_quality: 90
+
+  agent:
+    verbose_print: false
+    url: "http://YOUR_AGENT_HOST:PORT/v1"
+    model_name: "mai_ui"
+    settings: 
+      history_n: 3
+      resize_factor: 0.75
+
+  graph:
+    verbose_node_print: false
+    exploration_walks: 1000
+
+    exploration_schedule_depth_iterations:
+      1: 20
+      2: 100
+      3: 200
+      4: 300
+      5: 300
+      6: 100
+    max_consecutive_exploration_actions_in_each_iteration: 2  # if exploration schedule is not defined
+    
+    action_matching_clip_similarity_threshold: 0.85 # this is the threshold for the CLIP similarity threshold between the selected action and the region in the screenshot (excluding swipe or scroll actions)
+
+    exploration_modes:
+      probabilities:
+        "random_walk": 0.7
+        "local_bfs": 0.2
+        "model_llm_bfs": 0.1
+
+      local_bfs:
+        max_branching_factor: 5
+
+        # after backtracking both of these conditions should be met
+        guess_undo_vlm_type: 'qwen3.5-flash'
+        screenshot_longest_side_for_guess_undo_vlm_model: 1344
+        jpeg_quality_for_guess_undo_vlm_model: 90
+        backtracking_with_undo_clip_similarity_threshold: 0.7
+        backtracking_with_undo_xml_structure_distance_threshold: 0.2
+        backtracking_clip_similarity_threshold_with_agent: 0.1   # these can be lower since if agent have found all actions it means we are on the same path so probably dynamic elements are reducing similarity we still check the clip similarity of the action itself
+        backtracking_xml_structure_distance_threshold_with_agent: 0.5
+
+
+      model_llm_bfs:
+        model_name: 'qwen3.5-flash'
+        top_k_nodes_for_llm: 3
+
+
+    max_refresh_elements_on_each_node_visit: 2   # add elements to node if we visit it more than this number of times
+    refresh_elements_after_at_least_nodes_for_k_times: 5  # this excludes visites in BFS mode and backtracking
+
+    global_localization:
+      # this is high similarity fast method to find matched node (very fast, high confidence, high false negatives)
+      find_node_visual_emphasize:
+        clip_embedding_similarity_threshold: 0.99
+        xml_distance_threshold: 0.5
+        
+      find_node_structure_emphasize: # we can lower clip similarity threshold (for the cases when we have dynamic situations or modal (for example settings pop up is the same but its bg is different)) we could use xml distance in this case with a bit of visual similarity
+        clip_embedding_similarity_threshold: 0.6   
+        xml_distance_threshold: 0.1
+        clip_similarity_threshold_if_previous_action_is_swipe_or_scroll: 0.8  # if previous action is swipe or scroll, we should increase the clip similarity threshold (because we sometimes we get xml distance 0 after scroll but there are differnt contents)
+
+      find_node_path_emphasize:  # in this case if the paths are the same (excluding cycles or loops) then we can have lower clip/xml similarity
+        clip_embedding_similarity_threshold: 0.7
+        xml_distance_threshold: 0.3
+
+      find_node_page_purpose_emphasize:
+        page_purpose_similarity_threshold: 0.75
+        max_num_candidates_for_comparison: 3
+        compare_navigational_purpose_model: 'qwen3.5-flash'
+
+  logs:
+    root: "explored_apps/vlc_harmony"
+    resume_from_checkpoint: true
+
+
+  post_process:
+    vlm_model_name_for_node_level_information: 'qwen3.6-plus'
+    vlm_model_image_size_for_node_level_information: 1024
+    vlm_model_image_quality_for_node_level_information: 90
+
+    vlm_model_name_for_transition_info: 'qwen3.5-flash'
+    vlm_model_action_crop_size: 280
+    vlm_model_image_quality_for_transition_info: 90
+
+    vlm_model_name_for_path_intents: 'qwen3.6-plus'
+    vlm_model_name_for_node_user_intents: 'qwen3.6-plus'
+    vlm_model_name_for_navigation_plan: 'qwen3.6-plus'
+    vlm_model_name_for_agent_thought: 'qwen3.6-flash'
+
+    use_yibu_api: true
+
+
+    
