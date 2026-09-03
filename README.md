@@ -2,9 +2,8 @@
 
 Train a goal-conditioned functional similarity model on one app graph, then retrieve a graph node for a query screenshot and goal.
 
-## Recommended: standalone script
 
-`gcfsim_standalone.py` is **self-contained** (no `fine_tune_v2` imports). Everything needed for load → train → retrieve lives in that one file.
+`gcfsim.py`  train → retrieve lives in that one file.
 
 ```bash
 python gcfsim_standalone.py \
